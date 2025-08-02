@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Website Phát Nhạc Nâng Cao</title>
+<style>
+  body {
+    margin: 0; padding: 0; font-family: Arial, sans-serif;
+    background: #121212; color: #eee;
+    display: flex; height: 100vh; overflow: hidden;
+    transition: background-color 0.5s, color 0.5s;
+  }
+  #leftPanel {
+    width: 300px; background: #1e1e1e; padding: 10px;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  #leftPanel h2 {
+    margin: 5px 0;
+  }
+  button {
+    margin: 5px 0; padding: 8px;
+    cursor: pointer;
+    background: #3a3a3a; border: none;
+    color: #eee; font-weight: bold;
+    border-radius: 5px;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: #555;
+  }
+  #playlist {
+    flex-grow: 1; overflow-y: auto; margin-top: 10px;
+  }
+  .song {
+    padding: 8px;
+    border-bottom: 1px solid #333;
+    cursor: grab;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  .song.active {
+    background: #444;
+    font-weight: bold;
+  }
+  .song button {
+    background: #b00;
+    font-weight: normal;
+    padding: 0 6px;
+    border-radius: 3px;
+  }
+  #centerPanel {
+    flex-grow: 1; background: #222; display: flex; flex-direction: column;
+    position: relative;
+  }
+  #backgroundLayer {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden; filter: brightness(0.5);
+    z-index: 0;
+  }
+  #backgroundLayer img,
+  #backgroundLayer video {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  #playerControls {
+    position: relative; z-index: 10;
+    padding: 10px; text-align: center;
+    color: white;
+  }
+  #coverImage {
+    width: 150px; height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin: 0 auto 10px auto;
+    box-shadow: 0 0 15px #f39c12;
+    transition: box-shadow 0.5s;
+  }
+  #songTitle {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  #controls {
+    display: flex; justify-content: center; gap: 15px;
+    margin-bottom: 10px;
+  }
+  #controls button {
+    font-size: 1.5rem; background: none; border: none; color: #eee;
+    cursor: pointer;
+    user-select: none;
+  }
+  #progressContainer {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 0 10px;
+  }
+  #progress {
+    flex-grow: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    background: #555;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  #progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #f39c12;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  #timeDisplay {
+    width: 50px; text-align: right; font-size: 0.9rem;
+  }
+  #volumeContainer {
+    display: flex; align-items: center; justify-content: center; padding: 10px;
+  }
+  #volumeSlider {
+    width: 150px;
+  }
+  #eqControls {
+    display: flex; justify-content: center; gap: 12px;
+    padding: 10px;
+    user-select: none;
+  }
+  .eq-band {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .eq-band input[type=range] {
+    writing-mode: bt-lr; /* vertical slider */
+    -webkit-appearance: slider-vertical;
+    width: 30px; height: 120px;
+  }
+  .eq-band label {
+    font-size: 0.8rem; margin-bottom: 5px;
+  }
+  #visualizer {
+    width: 100%; height: 150px;
+    background: #111;
+    display: block;
+    margin: 0 auto;
+    border-radius: 5px;
+  }
+  #darkLightToggle {
+    position: absolute; top: 10px; right: 10px; z-index: 15;
+    background: #3a3a3a;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  /* LED nháy */
+  #ledStrip {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    z-index: 12;
+  }
+  .led {
+    width: 12px;
+    height: 12px;
+    background: #333;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #111 inset;
+    transition: background-color 0.1s;
+  }
+  /* Light mode */
+  body.light {
+    background: #fff; color: #111;
+  }
+  body.light #leftPanel {
+    background: #f5f5f5;
+    color: #111;
+  }
+  body.light button {
+    background: #ddd; color: #111;
+  }
+  body.light button:hover {
+    background: #bbb;
+  }
+  body.light #centerPanel {
+    background: #eee;
+    color: #111;
+  }
+  body.light #progress {
+    background: #bbb;
+  }
+  body.light #progress::-webkit-slider-thumb {
+    background: #e67e22;
+  }
+</style>
+</head>
+<body>
+  <div id="leftPanel">
+    <h2>Playlist</h2>
+    <button id="uploadMusicBtn">Tải Nhạc Lên</button>
+    <input type="file" id="uploadMusicInput" accept="audio/*" multiple style="display:none" />
+    <button id="uploadBgBtn">Tải Nền Lên</button>
+    <input type="file" id="uploadBgInput" accept="image/*,video/*" style="display:none" />
+    <div id="playlist" aria-label="Danh sách bài hát" tabindex="0"></div>
+  </div>
+
+  <div id="centerPanel">
+    <div id="backgroundLayer"></div>
+    <button id="darkLightToggle" aria-pressed="false">Chuyển sang Light Mode</button>
+    <audio id="audioPlayer" preload="metadata"></audio>
+
+    <div id="playerControls" role="region" aria-live="polite">
+      <img id="coverImage" alt="Ảnh bìa bài hát" />
+      <div id="songTitle">Chưa chọn bài hát</div>
+      <div id="controls">
+        <button id="prevBtn" aria-label="Bài trước">⏮</button>
+        <button id="playPauseBtn" aria-label="Phát / Tạm dừng">▶</button>
+        <button id="nextBtn" aria-label="Bài tiếp theo">⏭</button>
+      </div>
+      <div id="progressContainer">
+        <input type="range" id="progress" min="0" max="100" value="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Thanh tiến trình bài hát" />
+        <div id="timeDisplay" aria-live="off">00:00</div>
+      </div>
+      <div id="volumeContainer">
+        <label for="volumeSlider">Âm lượng:</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8" aria-label="Điều chỉnh âm lượng" />
+      </div>
+      <div id="eqControls" aria-label="Điều chỉnh Equalizer (5 băng tần)"></div>
+    </div>
+
+    <canvas id="visualizer" aria-hidden="true"></canvas>
+    <div id="ledStrip" aria-hidden="true"></div>
+  </div>
+
+<script>
+  // --- Code JS sẽ đi tiếp phần 2 ---
+  (() => {
+  const audioPlayer = document.getElementById('audioPlayer');
+  const playlistEl = document.getElementById('playlist');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const progress = document.getElementById('progress');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const uploadMusicBtn = document.getElementById('uploadMusicBtn');
+  const uploadMusicInput = document.getElementById('uploadMusicInput');
+  const uploadBgBtn = document.getElementById('uploadBgBtn');
+  const uploadBgInput = document.getElementById('uploadBgInput');
+  const backgroundLayer = document.getElementById('backgroundLayer');
+  const darkLightToggle = document.getElementById('darkLightToggle');
+  const songTitle = document.getElementById('songTitle');
+  const coverImage = document.getElementById('coverImage');
+  const eqControls = document.getElementById('eqControls');
+  const visualizerCanvas = document.getElementById('visualizer');
+  const ledStrip = document.getElementById('ledStrip');
+  const visualizerCtx = visualizerCanvas.getContext('2d');
+
+  // === Dữ liệu playlist ===
+  let playlist = [];
+  let currentIndex = -1;
+
+  // === Lưu trữ LocalStorage keys ===
+  const LS_PLAYLIST = 'music_player_playlist_v2';
+  const LS_INDEX = 'music_player_currentIndex_v2';
+  const LS_EQ = 'music_player_eq_v2';
+  const LS_THEME = 'music_player_theme_v2';
+  const LS_BG = 'music_player_bg_v2';
+
+  // === Cài đặt AudioContext và EQ ===
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const sourceNode = audioCtx.createMediaElementSource(audioPlayer);
+
+  // Tạo 5 bands EQ (băng tần phổ biến)
+  const eqBands = [
+    { freq: 60, type: 'lowshelf', gain: 0 },
+    { freq: 170, type: 'peaking', gain: 0 },
+    { freq: 350, type: 'peaking', gain: 0 },
+    { freq: 1000, type: 'peaking', gain: 0 },
+    { freq: 3500, type: 'highshelf', gain: 0 },
+  ];
+
+  const filters = eqBands.map(band => {
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = band.type;
+    filter.frequency.value = band.freq;
+    filter.gain.value = band.gain;
+    return filter;
+  });
+
+  // Nối chuỗi filter EQ
+  sourceNode.connect(filters[0]);
+  for (let i = 0; i < filters.length - 1; i++) {
+    filters[i].connect(filters[i + 1]);
+  }
+  filters[filters.length - 1].connect(audioCtx.destination);
+
+  // === Tạo giao diện EQ sliders ===
+  eqBands.forEach((band, i) => {
+    const bandDiv = document.createElement('div');
+    bandDiv.className = 'eq-band';
+    bandDiv.innerHTML = `
+      <label for="eq${i}">${band.freq}Hz</label>
+      <input type="range" min="-12" max="12" value="0" step="0.1" id="eq${i}" orient="vertical" aria-label="Băng tần ${band.freq}Hz" />
+    `;
+    eqControls.appendChild(bandDiv);
+  });
+
+  // === Xử lý thay đổi EQ ===
+  eqBands.forEach((band, i) => {
+    const slider = document.getElementById(`eq${i}`);
+    slider.addEventListener('input', e => {
+      filters[i].gain.value = parseFloat(e.target.value);
+      saveEQ();
+    });
+  });
+
+  // === Lưu EQ vào LocalStorage ===
+  function saveEQ() {
+    const eqValues = eqBands.map((_, i) => parseFloat(document.getElementById(`eq${i}`).value));
+    localStorage.setItem(LS_EQ, JSON.stringify(eqValues));
+  }
+
+  // === Load EQ từ LocalStorage ===
+  function loadEQ() {
+    const eqStr = localStorage.getItem(LS_EQ);
+    if (!eqStr) return;
+    try {
+      const eqValues = JSON.parse(eqStr);
+      eqValues.forEach((v, i) => {
+        const slider = document.getElementById(`eq${i}`);
+        if (slider) {
+          slider.value = v;
+          filters[i].gain.value = v;
+        }
+      });
+    } catch {}
+  }
+
+  // === Render playlist ===
+  function renderPlaylist() {
+    playlistEl.innerHTML = '';
+    playlist.forEach((song, i) => {
+      const songDiv = document.createElement('div');
+      songDiv.className = 'song';
+      if (i === currentIndex) songDiv.classList.add('active');
+      songDiv.tabIndex = 0;
+      songDiv.setAttribute('draggable', 'true');
+      songDiv.textContent = song.name;
+
+      // Nút xóa bài
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.title = 'Xóa bài này';
+      delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteSong(i);
+      });
+
+      songDiv.appendChild(delBtn);
+
+      // Bấm chọn bài
+      songDiv.addEventListener('click', () => {
+        playSong(i);
+      });
+      songDiv.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          playSong(i);
+        }
+      });
+
+      // Drag and drop support
+      songDiv.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', i);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      songDiv.addEventListener('dragover', e => {
+        e.preventDefault();
+        songDiv.style.background = '#555';
+      });
+      songDiv.addEventListener('dragleave', e => {
+        songDiv.style.background = '';
+      });
+      songDiv.addEventListener('drop', e => {
+        e.preventDefault();
+        songDiv.style.background = '';
+        const draggedIndex = Number(e.dataTransfer.getData('text/plain'));
+        if (draggedIndex === i) return;
+        moveSong(draggedIndex, i);
+      });
+
+      playlistEl.appendChild(songDiv);
+    });
+  }
+
+  // === Thêm bài hát mới ===
+  uploadMusicBtn.addEventListener('click', () => {
+    uploadMusicInput.click();
+  });
+
+  uploadMusicInput.addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+      const url = URL.createObjectURL(file);
+      playlist.push({ name: file.name, url, file });
+    }
+    savePlaylist();
+    if (currentIndex === -1 && playlist.length > 0) {
+      playSong(0);
+    } else {
+      renderPlaylist();
+    }
+    uploadMusicInput.value = '';
+  });
+
+  // === Xóa bài ===
+  function deleteSong(index) {
+    if (index < 0 || index >= playlist.length) return;
+    // Nếu xóa bài hiện đang phát, chuyển bài khác
+    if (index === currentIndex) {
+      if (playlist.length > 1) {
+        if (index === playlist.length - 1) {
+          playSong(index - 1);
+        } else {
+          playSong(index + 1);
+        }
+      } else {
+        stopSong();
+      }
+    }
+    playlist.splice(index, 1);
+    if (currentIndex > index) currentIndex--;
+    else if (currentIndex === index) currentIndex = -1;
+    savePlaylist();
+    renderPlaylist();
+  }
+
+  // === Di chuyển bài hát (kéo thả) ===
+  function moveSong(fromIndex, toIndex) {
+    if (fromIndex === toIndex) return;
+    const song = playlist.splice(fromIndex, 1)[0];
+    playlist.splice(toIndex, 0, song);
+
+    // Cập nhật currentIndex nếu cần
+    if (currentIndex === fromIndex) currentIndex = toIndex;
+    else if (currentIndex >= Math.min(fromIndex, toIndex) && currentIndex <= Math.max(fromIndex, toIndex)) {
+      if (fromIndex < toIndex) currentIndex--;
+      else currentIndex++;
+    }
+    savePlaylist();
+    renderPlaylist();
+  }
+
+  // === Phát bài ===
+  function playSong(index) {
+    if (index < 0 || index >= playlist.length) return;
+    currentIndex = index;
+    const song = playlist[index];
+    audioPlayer.src = song.url;
+    songTitle.textContent = song.name;
+    coverImage.src = 'https://picsum.photos/150?random=' + index; // tạm ảnh bìa random
+    playAudio();
+    saveCurrentIndex();
+    renderPlaylist();
+    syncBackgroundColor(song.name);
+  }
+
+  function playAudio() {
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    audioPlayer.play();
+    playPauseBtn.textContent = '⏸';
+    playPauseBtn.setAttribute('aria-label', 'Tạm dừng');
+  }
+  function pauseAudio() {
+    audioPlayer.pause();
+    playPauseBtn.textContent = '▶';
+    playPauseBtn.setAttribute('aria-label', 'Phát');
+  }
+  function stopSong() {
+    pauseAudio();
+    audioPlayer.src = '';
+    currentIndex = -1;
+    songTitle.textContent = 'Chưa chọn bài hát';
+    coverImage.src = '';
+    renderPlaylist();
+  }
+
+  // === Nút Play/Pause ===
+  playPauseBtn.addEventListener('click', () => {
+    if (audioPlayer.paused) playAudio();
+    else pauseAudio();
+  });
+
+  // === Nút Next / Prev ===
+  nextBtn.addEventListener('click', () => {
+    if (playlist.length === 0) return;
+    playSong((currentIndex + 1) % playlist.length);
+  });
+  prevBtn.addEventListener('click', () => {
+    if (playlist.length === 0) return;
+    playSong((currentIndex - 1 + playlist.length) % playlist.length);
+  });
+
+  // === Thanh tiến trình ===
+  audioPlayer.addEventListener('timeupdate', () => {
+    if (audioPlayer.duration) {
+      const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+      progress.value = progressPercent;
+      progress.setAttribute('aria-valuenow', progressPercent.toFixed(0));
+      timeDisplay.textContent = formatTime(audioPlayer.currentTime);
+    }
+  });
+  progress.addEventListener('input', () => {
+    if (audioPlayer.duration) {
+      audioPlayer.currentTime = (progress.value / 100) * audioPlayer.duration;
+    }
+  });
+
+  // === Kết thúc bài hát tự chạy bài tiếp ===
+  audioPlayer.addEventListener('ended', () => {
+    nextBtn.click();
+  });
+
+  // === Điều chỉnh âm lượng ===
+  volumeSlider.addEventListener('input', () => {
+    audioPlayer.volume = volumeSlider.value;
+  });
+  audioPlayer.volume = volumeSlider.value;
+
+  // === Hàm format thời gian ===
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  // === Lưu playlist vào LocalStorage (chỉ lưu name và url tạm) ===
+  function savePlaylist() {
+    // Không lưu file object, chỉ lưu name và url (blob url sẽ mất khi reload, nên playlist chỉ dùng tạm)
+    const saveData = playlist.map(({ name, url }) => ({ name, url }));
+    localStorage.setItem(LS_PLAYLIST, JSON.stringify(saveData));
+  }
+
+  // === Lưu currentIndex ===
+  function saveCurrentIndex() {
+    localStorage.setItem(LS_INDEX, currentIndex);
+  }
+
+  // === Load playlist từ LocalStorage ===
+  function loadPlaylist() {
+    const data = localStorage.getItem(LS_PLAYLIST);
+    if (!data) return;
+    try {
+      const savedList = JSON.parse(data);
+      playlist = savedList;
+      renderPlaylist();
+      const idx = parseInt(localStorage.getItem(LS_INDEX));
+      if (!isNaN(idx) && idx >= 0 && idx < playlist.length) {
+        playSong(idx);
+      }
+    } catch {}
+  }
+
+  // === Đổi màu nền theo bài hát ===
+  function syncBackgroundColor(text) {
+    // Tạo màu từ chuỗi
+    function hashStringToColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+      return "#" + "00000".substring(0, 6 - c.length) + c;
+    }
+    const color = hashStringToColor(text);
+    document.body.style.backgroundColor = color;
+  }
+
+  // === Dark/Light mode ===
+  function saveTheme(isLight) {
+    localStorage.setItem(LS_THEME, isLight ? 'light' : 'dark');
+  }
+  function loadTheme() {
+    const theme = localStorage.getItem(LS_THEME);
+    if (theme === 'light') {
+      document.body.classList.add('light');
+      darkLightToggle.textContent = 'Chuyển sang Dark Mode';
+      darkLightToggle.setAttribute('aria-pressed', 'true');
+    } else {
+      document.body.classList.remove('light');
+      darkLightToggle.textContent = 'Chuyển sang Light Mode';
+      darkLightToggle.setAttribute('aria-pressed', 'false');
+    }
+  }
+  darkLightToggle.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    saveTheme(isLight);
+    darkLightToggle.textContent = isLight ? 'Chuyển sang Dark Mode' : 'Chuyển sang Light Mode';
+    darkLightToggle.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+  });
+
+  // === Upload nền (ảnh hoặc video) ===
+  uploadBgBtn.addEventListener('click', () => {
+    uploadBgInput.click();
+  });
+
+  uploadBgInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    localStorage.setItem(LS_BG, JSON.stringify({ type: file.type, url }));
+
+    setBackground(url, file.type);
+    uploadBgInput.value = '';
+  });
+
+  // === Đặt nền ===
+  function setBackground(url, type) {
+    backgroundLayer.innerHTML = '';
+    if (type.startsWith('video/')) {
+      const video = document.createElement('video');
+      video.src = url;
+      video.autoplay = true;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      backgroundLayer.appendChild(video);
+    } else if (type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = url;
+      backgroundLayer.appendChild(img);
+    }
+  }
+
+  // === Load nền từ LocalStorage ===
+  function loadBackground() {
+    const bgStr = localStorage.getItem(LS_BG);
+    if (!bgStr) return;
+    try {
+      const bg = JSON.parse(bgStr);
+      setBackground(bg.url, bg.type);
+    } catch {}
+  }
+
+  // === Visualizer Audio (canvas) ===
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  sourceNode.connect(analyser);
+
+  let animationId;
+  function drawVisualizer() {
+    const width = visualizerCanvas.width;
+    const height = visualizerCanvas.height;
+    visualizerCtx.clearRect(0, 0, width, height);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
+
+    const barWidth = (width / bufferLength) * 1.5;
+    let x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const barHeight = dataArray[i];
+      const r = barHeight + 25;
+      const g = 50;
+      const b = 150;
+
+      visualizerCtx.fillStyle = `rgb(${r},${g},${b})`;
+      visualizerCtx.fillRect(x, height - barHeight, barWidth, barHeight);
+      x += barWidth + 1;
+    }
+    animationId = requestAnimationFrame(drawVisualizer);
+  }
+
+  // Resize canvas
+  function resizeCanvas() {
+    visualizerCanvas.width = visualizerCanvas.clientWidth * devicePixelRatio;
+    visualizerCanvas.height = visualizerCanvas.clientHeight * devicePixelRatio;
+    visualizerCtx.scale(devicePixelRatio, devicePixelRatio);
+  }
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+  });
+  resizeCanvas();
+  drawVisualizer();
+
+  // === Load playlist, theme, background khi khởi động ===
+  loadPlaylist();
+  loadTheme();
+  loadBackground();
+
+})()
+// ;Mình đã tổng hợp và hoàn chỉnh code JavaScript cho phần playlist của bạn với các tính năng sau:
+
+//- Hiển thị danh sách phát, cho phép chọn bài, kéo thả đổi vị trí bài hát.
+//- Thêm bài mới qua upload file âm thanh.
+//- Xóa bài hát khỏi playlist.
+//- Phát, tạm dừng, chuyển bài kế tiếp / trước đó.
+//- Thanh tiến trình và âm lượng điều chỉnh.
+//- Lưu playlist, bài đang phát, giao diện (dark/light) và nền (ảnh hoặc video) vào LocalStorage.
+//- Visualizer dạng thanh màu chạy theo nhạc.
+//- Đổi màu nền động theo tên bài.
+//- Toggle dark/light mode.
+//- Upload và đổi nền nền ảnh/video.
+
+//Nếu bạn muốn, mình có thể giúp bạn tích hợp hoặc giải thích từng phần chi tiết, hoặc bổ sung thêm các tính năng nâng cao như:
+
+//- Visualizer dạng sóng âm thanh hoặc dạng sóng chạy viền web.
+//- Hiệu ứng LED nháy theo nhạc.
+//- Đồng bộ cover art thật sự.
+//- Hỗ trợ playlist kéo thả chuyên nghiệp hơn.
+
+// Bạn muốn mình hỗ trợ thêm phần nào hoặc cải tiến nào không? Hoặc bạn có đoạn code cụ thể nào bạn muốn mình kiểm tra, chỉnh sửa?
+
+</script>
+</body>
+</html>
