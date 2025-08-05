@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle, #1a1a2e, #000000);
+  font-family: 'Press Start 2P', cursive;
+  color: #fff;
+  position: relative;
+}
+
+.logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.logo img {
+  width: 150px;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.logo h1 {
+  font-size: 1.2rem;
+  margin-top: 1rem;
+  animation: fadeInUp 2s ease-in-out;
+}
+
+.enter-btn {
+  margin-top: 2rem;
+  padding: 0.8rem 1.5rem;
+  background: #ffcb05;
+  color: #2a75bb;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  animation: fadeIn 3s ease-in-out;
+}
+
+.enter-btn:hover {
+  background: #f4b400;
+}
+
+#particles-js {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: 1;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1) translate(-50%, -50%); }
+  50% { transform: scale(1.1) translate(-50%, -50%); }
+  100% { transform: scale(1) translate(-50%, -50%); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
