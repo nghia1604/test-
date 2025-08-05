@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hỗ trợ khách hàng | Shop Xuân Nghĩa</title>
+  <link rel="stylesheet" href="css/chatbot.css"/>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">💬 Trợ lý ảo</div>
+    <nav class="nav">
+      <a href="index.html">Trang chủ</a>
+      <a href="products.html">Sản phẩm</a>
+      <a href="chatbot.html" class="active">Hỗ trợ</a>
+      <a href="contact.html">Liên hệ</a>
+      <a href="cart.html" class="cart-link">🛒 (<span id="cart-count">0</span>)</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="chat-section">
+      <h2>🤖 Trợ lý thông minh</h2>
+      <div class="chatbox">
+        <div id="chatlog" class="chatlog"></div>
+        <div class="input-area">
+          <input type="text" id="userInput" placeholder="Nhập câu hỏi của bạn..." />
+          <button onclick="handleUserInput()">Gửi</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/chatbot.js"></script>
+</body>
+</html>
